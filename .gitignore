@@ -1,0 +1,5 @@
+videos/**/*.mp4
+features/**/*.npy
+
+# don't ignore the .gitkeep files (this keeps the folders on GitHub)
+!**/ .gitkeep
