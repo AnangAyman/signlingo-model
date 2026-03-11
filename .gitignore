@@ -1,5 +1,13 @@
+# 1. Ignore the heavy data files
 videos/**/*.mp4
+videos/**/*.mov
+videos/**/*.avi
 features/**/*.npy
 
-# don't ignore the .gitkeep files (this keeps the folders on GitHub)
-!**/ .gitkeep
+# 2. DO NOT ignore the folder markers (.gitkeep)
+!**/.gitkeep
+
+# 3. Ignore Python environment and cache
+.venv/
+__pycache__/
+.DS_Store
