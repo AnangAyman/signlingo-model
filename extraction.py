@@ -32,24 +32,40 @@ for action in ACTIONS:
 os.makedirs(DEBUG_PATH, exist_ok=True)
 
 def extract_and_normalize_keypoints(results):
-    """Applies Shoulder Normalization to handle distance/scale"""
+    """Applies Shoulder Normalization to handle translation and distance/scale"""
     cx, cy, cz = 0.0, 0.0, 0.0
+    scale = 1.0  # Default scale
+    
     if results.pose_landmarks:
-        l_sh = results.pose_landmarks.landmark[11]
+        l_sh = results.pose_landmarks.landmark[11] 
         r_sh = results.pose_landmarks.landmark[12]
+        
+        # Find the center point between the shoulders
         cx, cy, cz = (l_sh.x + r_sh.x)/2, (l_sh.y + r_sh.y)/2, (l_sh.z + r_sh.z)/2
+        
+        # Calculate the Euclidean distance between the shoulders
+        shoulder_dist = np.linalg.norm([l_sh.x - r_sh.x, l_sh.y - r_sh.y, l_sh.z - r_sh.z])
+        if shoulder_dist > 0:
+            scale = shoulder_dist
 
     def norm(lm_list, is_face=False):
         if not lm_list: return np.zeros(len(SELECTED_FACE_IDS)*3) if is_face else np.zeros(21*3)
         data = []
         for i, lm in enumerate(lm_list.landmark):
             if is_face and i not in SELECTED_FACE_IDS: continue
-            data.extend([lm.x - cx, lm.y - cy, lm.z - cz])
+            # Apply both translation (- cx) and distance scaling (/ scale)
+            data.extend([(lm.x - cx) / scale, (lm.y - cy) / scale, (lm.z - cz) / scale])
         return np.array(data)
 
     lh, rh = norm(results.left_hand_landmarks), norm(results.right_hand_landmarks)
     face = norm(results.face_landmarks, is_face=True)
-    pose = np.array([[lm.x - cx, lm.y - cy, lm.z - cz] for lm in results.pose_landmarks.landmark]).flatten() if results.pose_landmarks else np.zeros(33*3)
+    
+    if results.pose_landmarks:
+        pose = np.array([[(lm.x - cx) / scale, (lm.y - cy) / scale, (lm.z - cz) / scale] 
+                         for lm in results.pose_landmarks.landmark]).flatten()
+    else:
+        pose = np.zeros(33*3)
+        
     return np.concatenate([pose, face, lh, rh])
 
 SHOULD_DEBUG = True 
